@@ -1,0 +1,22 @@
+# Environments
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local environment variables
+.env
+
+# Database
+*.sqlite3
+
+# IDEs
+.vscode/
+.idea/
+
+# Docker logs
+.docker/

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Society Log - Guard Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; }
+        .dashboard-header { background-color: #343a40; color: white; padding: 15px 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;}
+        .guard-info p { margin: 5px 0; font-size: 1.1em; }
+        .badge { background-color: #17a2b8; padding: 4px 8px; border-radius: 4px; font-size: 0.9em; }
+        .btn { padding: 10px 15px; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; border: none; cursor: pointer; }
+        .btn-primary { background-color: #007bff; }
+        .btn-danger { background-color: #dc3545; }
+        .btn-secondary { background-color: #6c757d; }
+        table { width: 100%; background: white; border-collapse: collapse; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; margin-bottom: 30px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #e9ecef; color: #333; }
+        h2 { color: #333; }
+    </style>
+</head>
+<body>
+
+    <!-- Header showing Guard Details -->
+    <div class="dashboard-header">
+        <div class="guard-info">
+            <p><strong>Guard on Duty:</strong> {{ request.user.username|title }}</p>
+            <p><strong>Shift:</strong> <span class="badge">{{ request.user.guard.shift }}</span></p>
+        </div>
+        <div>
+            <a href="{% url 'check_in' %}" class="btn btn-primary">+ New Entry</a>
+            
+            <!-- Django 5 requires a POST request to logout for security -->
+            <form action="{% url 'logout' %}" method="post" style="display:inline; margin-left: 10px;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary">Logout</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Active Visitors Section -->
+    <h2>Currently Inside Society</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Visitor Name</th>
+                <th>Phone</th>
+                <th>To meet</th>
+                <th>Purpose</th>
+                <th>Check-in Time</th>
+                <th>Checked In By</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for visitor in active_visitors %}
+            <tr>
+                <td>{{ visitor.name }}</td>
+                <td>{{ visitor.phone_number }}</td>
+                <td>{{ visitor.person_to_meet }}</td>
+                <td>
+                    {% if visitor.purpose == 'Other' %}
+                        {{ visitor.other_purpose }}
+                    {% else %}
+                        {{ visitor.purpose }}
+                    {% endif %}
+                </td>
+                <td>{{ visitor.check_in_time|date:"h:i A" }}</td>
+                <td>{{ visitor.checked_in_by.user.username|title }}</td>
+                <td>
+                    <!-- The Checkout Button passing the specific visitor's ID to our URL -->
+                    <a href="{% url 'check_out' visitor.id %}" class="btn btn-danger">Check Out</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6" style="text-align: center; color: gray;">No visitors currently inside.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Past Visitors Section -->
+    <h2>Checked Out Today</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Visitor Name</th>
+                <th>To meet</th>
+                <th>Purpose</th>
+                <th>Check-in Time</th>
+                <th>Check-out Time</th>
+                <th>Checked Out By</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for visitor in past_visitors %}
+            <tr>
+                <td>{{ visitor.name }}</td>
+                <td>{{visitor.person_to_meet}}</td>
+                <td>
+                    {% if visitor.purpose == 'Other' %}
+                        {{ visitor.other_purpose }}
+                    {% else %}
+                        {{ visitor.purpose }}
+                    {% endif %}
+                </td>
+                <td>{{ visitor.check_in_time|date:"h:i A" }}</td>
+                <td>{{ visitor.check_out_time|date:"h:i A" }}</td>
+                <td>{{ visitor.checked_out_by.user.username|title }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" style="text-align: center; color: gray;">No one has checked out yet today.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>

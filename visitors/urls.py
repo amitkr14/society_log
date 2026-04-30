@@ -1,0 +1,24 @@
+from django.urls import path
+from django.contrib.auth import views as auth_views
+from . import views
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
+urlpatterns = [
+    # Built-in Django login/logout views
+    path('login/', auth_views.LoginView.as_view(template_name='visitors/login.html'), name='login'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
+    
+    # Our custom views
+    path('', views.dashboard, name='dashboard'),
+    path('check-in/', views.check_in_visitor, name='check_in'),
+    path('check-out/<int:visitor_id>/', views.check_out_visitor, name='check_out'),
+
+    # API urls
+    path('api/dashboard/', views.api_dashboard, name='api_dashboard'),
+    path('api/check-in/', views.api_check_in, name='api_check_in'),
+
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/guest-pass/create/', views.api_create_guest_pass, name='api_create_guest_pass'),
+    path('api/analytics/daily/', views.api_daily_analytics, name='api_daily_analytics'),
+]

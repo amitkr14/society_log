@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  # The Database Container
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: society_log
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Password@123
+    ports:
+      - "5432:5432"
+
+  # The Django Web Container
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
