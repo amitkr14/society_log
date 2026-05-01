@@ -2,6 +2,13 @@ from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from . import views
+
+
+router = DefaultRouter()
+router.register(r'search-visitors', views.VisitorViewSet, basename='search-visitor')
 
 urlpatterns = [
     # Built-in Django login/logout views
@@ -21,4 +28,5 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/guest-pass/create/', views.api_create_guest_pass, name='api_create_guest_pass'),
     path('api/analytics/daily/', views.api_daily_analytics, name='api_daily_analytics'),
+    path('api/', include(router.urls)),
 ]

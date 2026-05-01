@@ -23,8 +23,16 @@
     <!-- Header showing Guard Details -->
     <div class="dashboard-header">
         <div class="guard-info">
-            <p><strong>Guard on Duty:</strong> {{ request.user.username|title }}</p>
-            <p><strong>Shift:</strong> <span class="badge">{{ request.user.guard.shift }}</span></p>
+            {% if request.user.is_superuser or request.user.is_staff %}
+
+               <!-- What Admins see -->
+               <h5 class="text-white mb-0">Admin Portal</h5>
+               <small class="text-light">Logged in as: {{ request.user.username|title }}</small>
+            {% else %}
+               <!-- What Guards see -->
+               <h5 class="text-white mb-0">Guard on Duty: {{ request.user.username|title }}</h5>
+               <small class="text-light">Shift: {{ request.user.guard.shift }}</small>
+            {% endif %}
         </div>
         <div>
             <a href="{% url 'check_in' %}" class="btn btn-primary">+ New Entry</a>

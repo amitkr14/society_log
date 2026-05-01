@@ -9,6 +9,10 @@ from rest_framework import status
 from .models import GuestPass
 from django.db.models import Count
 from django.db.models.functions import TruncHour
+from rest_framework import viewsets
+from rest_framework.filters import SearchFilter, OrderingFilter
+from django_filters.rest_framework import DjangoFilterBackend
+from .permissions import IsAdminOrGuardCreateOnly
 
 
 
@@ -179,3 +183,24 @@ def api_daily_analytics(request):
         'breakdown_by_purpose': purpose_counts,
         'busiest_hours': busiest_hours
     }, status=status.HTTP_200_OK)
+
+class VisitorViewSet(viewsets.ModelViewSet):
+    queryset = Visitor.objects.all()
+    serializer_class = VisitorSerializer
+
+
+    permission_classes = [IsAdminOrGuardCreateOnly]
+    
+    # Enable the backends
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    
+    # 1. Filter by exact matches 
+    filterset_fields = ['purpose', 'person_to_meet'] 
+    
+    # 2. Search by partial text (e.g., typing "Smi" finds "Smith")
+    search_fields = ['name', 'phone_number'] 
+    
+    # 3. Order the results 
+    ordering_fields = ['check_in_time']
+    ordering = ['-check_in_time'] # The '-' means descending order (newest first)
+

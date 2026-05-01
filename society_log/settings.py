@@ -33,6 +33,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'visitors',
     'rest_framework',
+    'django_filters',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -108,12 +109,17 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/6.0/topics/i18n/
 
+# Internationalization
+# https://docs.djangoproject.com/en/6.0/topics/i18n/
+
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+# Set this to your local timezone
+TIME_ZONE = 'Asia/Kolkata' 
 
 USE_I18N = True
 
+# Keep this as True so Django stores time safely in the database
 USE_TZ = True
 
 
@@ -129,14 +135,23 @@ LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'login'
 
 # Tell Django REST Framework how to secure our APIs
+# Tell Django REST Framework how to secure our APIs and handle data
 REST_FRAMEWORK = {
+    # --- 1. KEEP YOUR EXISTING SECURITY SETTINGS ---
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-
         'rest_framework.authentication.SessionAuthentication',
     ),
-    # This ensures NO ONE can access any API without a valid token
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
-    )
+    ),
+
+    # --- 2. ADD THE NEW PAGINATION & FILTERING SETTINGS ---
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 3,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
 }
