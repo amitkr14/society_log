@@ -1,29 +1,23 @@
-# Society Log Management System
+# 🏢 Society Log - Digital Visitor Management
 
-A production-grade backend system designed to manage visitor logs for residential societies. This project focuses on **Clean Architecture**, **Containerization**, and **Scalable Database Management**.
+A secure, multi-role Django application designed to replace traditional paper-based society visitor logs with a modern, OTP-verified system.
 
-## 🚀 Project Overview
-This is a backend API built with **Django** and **Django REST Framework**. It allows society security guards to log visitor entries, manage shifts, and handle authentication securely using **JWT (JSON Web Tokens)**.
+## 🌟 Major Updates (May 2026)
+Successfully transitioned the project from a single-user prototype to a production-ready multi-role ecosystem.
 
-### Key Features
-*   **Dockerized Environment**: Fully containerized using Docker and Docker Compose for easy setup.
-*   **Database**: PostgreSQL for production-grade data persistence.
-*   **Authentication**: Secure login and authorization using SimpleJWT.
-*   **Clean Design**: Modular architecture following backend best practices.
+### Key Technical Milestones:
+*   **Intelligent Routing:** Implemented a `login_redirect` traffic-cop view to automatically funnel Residents and Guards to their respective dashboards upon login[cite: 2].
+*   **Secure OTP Lifecycle:** Developed a "burn-on-use" OTP system where residents generate 6-digit codes and guards verify them to trigger automated entry logs[cite: 1, 2].
+*   **Timezone Synchronization:** Refactored backend logic to use `Asia/Kolkata` (IST) with `timezone.localdate()`, ensuring midnight rollovers and daily analytics are 100% accurate to the local clock.
+*   **Dynamic UI:** Added JavaScript-driven form elements to handle "Other" purpose specifications without page reloads.
 
 ## 🛠️ Tech Stack
-*   **Language**: Python 3.12
-*   **Framework**: Django 6.0
-*   **Database**: PostgreSQL 15
-*   **DevOps**: Docker, Docker Compose, Git
+*   **Core:** Python 3.12, Django 6.0.4[cite: 2]
+*   **Database:** PostgreSQL
+*   **Infrastructure:** Docker & Docker-Compose
+*   **Auth:** Django Built-in Auth with custom profile linking (1-to-1 relationships)[cite: 1, 2]
 
-## ⚙️ How to Run Locally
-
-### Prerequisites
-*   Docker Desktop installed on your machine.
-
-### Installation Steps
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/amitkr14/society_log.git](https://github.com/amitkr14/society_log.git)
-   cd society_log
+## 🚀 How to Run
+1. `docker-compose up --build`
+2. `docker-compose exec web python manage.py migrate`
+3. Access the **Landing Page** at `http://localhost:8000/`[cite: 2]

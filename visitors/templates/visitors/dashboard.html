@@ -5,16 +5,16 @@
     <title>Society Log - Guard Dashboard</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f8f9fa; }
-        .dashboard-header { background-color: #343a40; color: white; padding: 15px 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;}
+        .dashboard-header { background-color: #370661; color: white; padding: 15px 20px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;}
         .guard-info p { margin: 5px 0; font-size: 1.1em; }
         .badge { background-color: #17a2b8; padding: 4px 8px; border-radius: 4px; font-size: 0.9em; }
         .btn { padding: 10px 15px; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; border: none; cursor: pointer; }
         .btn-primary { background-color: #007bff; }
-        .btn-danger { background-color: #dc3545; }
-        .btn-secondary { background-color: #6c757d; }
-        table { width: 100%; background: white; border-collapse: collapse; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; margin-bottom: 30px; }
+        .btn-danger { background-color: #bf1b0c; }
+        .btn-secondary { background-color: #8843d7; }
+        table { width: 100%; background: rgb(241, 239, 244); border-collapse: collapse; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; margin-bottom: 30px; }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #e9ecef; color: #333; }
+        th { background-color: #b9a1c9; color: #0f0f10e2; }
         h2 { color: #333; }
     </style>
 </head>
@@ -24,14 +24,13 @@
     <div class="dashboard-header">
         <div class="guard-info">
             {% if request.user.is_superuser or request.user.is_staff %}
-
-               <!-- What Admins see -->
                <h5 class="text-white mb-0">Admin Portal</h5>
                <small class="text-light">Logged in as: {{ request.user.username|title }}</small>
-            {% else %}
-               <!-- What Guards see -->
+            {% elif request.user.guard %}
                <h5 class="text-white mb-0">Guard on Duty: {{ request.user.username|title }}</h5>
                <small class="text-light">Shift: {{ request.user.guard.shift }}</small>
+            {% else %}
+               <h5 class="text-white mb-0">Welcome: {{ request.user.username|title }}</h5>
             {% endif %}
         </div>
         <div>
@@ -43,6 +42,28 @@
                 <button type="submit" class="btn btn-secondary">Logout</button>
             </form>
         </div>
+    </div>
+
+    <!-- NEW: Django Flash Messages (Success/Error Alerts) -->
+    {% if messages %}
+        <div style="margin-bottom: 20px;">
+            {% for message in messages %}
+                <div style="padding: 12px; border-radius: 5px; font-weight: bold; color: white; background-color: {% if message.tags == 'error' %}#e74c3c{% else %}#27ae60{% endif %}; margin-bottom: 10px;">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- NEW: Fast-Track OTP Form -->
+    <div style="background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px; display: flex; align-items: center; gap: 15px;">
+        <h3 style="margin: 0; color: #2c3e50; white-space: nowrap;">⚡ Fast-Track OTP Check-In:</h3>
+        
+        <form action="{% url 'verify_otp' %}" method="POST" style="display: flex; gap: 10px; margin: 0; width: 100%;">
+            {% csrf_token %}
+            <input type="text" name="pass_code" placeholder="Enter 6-character OTP (e.g. A7B9Q2)" required maxlength="6" style="padding: 10px; border: 1px solid #ccc; border-radius: 5px; flex-grow: 1; font-family: monospace; font-size: 16px; text-transform: uppercase;">
+            <button type="submit" class="btn btn-primary" style="background-color: #27ae60; border: none; padding: 10px 25px;">Verify & Allow Entry</button>
+        </form>
     </div>
 
     <!-- Active Visitors Section -->
@@ -81,7 +102,7 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6" style="text-align: center; color: gray;">No visitors currently inside.</td>
+                <td colspan="6" style="text-align: center; color: rgb(94, 47, 138);">No visitors currently inside.</td>
             </tr>
             {% endfor %}
         </tbody>

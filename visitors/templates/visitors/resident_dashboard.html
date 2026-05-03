@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resident Portal | Pre-Approved Passes</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; display: flex; gap: 20px; flex-wrap: wrap; }
+        .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex: 1; min-width: 300px; }
+        h2 { color: #2c3e50; margin-top: 0; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { background-color: #2980b9; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
+        button:hover { background-color: #3498db; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }
+        th { background-color: #ecf0f1; color: #2c3e50; }
+        .badge { padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; color: white; }
+        .badge-valid { background-color: #27ae60; }
+        .badge-invalid { background-color: #e74c3c; }
+        .otp-text { font-family: monospace; font-size: 18px; font-weight: bold; letter-spacing: 2px; color: #e67e22; }
+        .messages { background-color: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #c3e6cb; }
+    </style>
+</head>
+<body>
+
+    <!-- Header Section with Logout Button -->
+    <div style="max-width: 1000px; margin: 0 auto 20px auto; display: flex; justify-content: space-between; align-items: center;">
+        <h2>Welcome, Flat {{ user.resident.flat_number }}</h2>
+        
+        <!-- Secure POST form for logging out -->
+        <form action="{% url 'logout' %}" method="post" style="margin: 0;">
+            {% csrf_token %}
+            <button type="submit" style="background-color: #e74c3c; width: auto; padding: 10px 20px; font-size: 14px; border-radius: 5px;">
+                Log Out
+            </button>
+        </form>
+    </div>
+
+    <!-- Django Flash Messages (For showing the success message and OTP) -->
+    <div style="max-width: 1000px; margin: auto;">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="messages"><strong>{{ message }}</strong></div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <div class="container">
+        <!-- LEFT SIDE: The Generation Form -->
+        <div class="card">
+            <h2>Generate Guest Pass</h2>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>Visitor Name</label>
+                    <input type="text" name="visitor_name" required placeholder="e.g. Rahul Sharma">
+                </div>
+                <div class="form-group">
+                    <label>Visitor Phone</label>
+                    <input type="text" name="visitor_phone" required placeholder="e.g. 9876543210">
+                </div>
+                <div class="form-group">
+                    <label>Purpose</label>
+                    <select name="purpose" id="purpose_select" required>
+                        <option value="Delivery">Delivery</option>
+                        <option value="Meeting">Meeting</option>
+                        <option value="Personal Visit">Personal Visit</option>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group" id="other_purpose_group" style="display: none;">
+                    <label>Specify Purpose</label>
+                    <input type="text" name="other_purpose" id="other_purpose_input" placeholder="e.g. Tutor, Plumber, Event">
+                </div>
+                <button type="submit">Generate 6-Digit OTP</button>
+            </form>
+        </div>
+
+        <!-- RIGHT SIDE: The History Table -->
+        <div class="card" style="flex: 2;">
+            <h2>My Active & Past Passes</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>OTP Code</th>
+                        <th>Visitor Name</th>
+                        <th>Purpose</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pass in passes %}
+                    <tr>
+                        <td class="otp-text">{{ pass.pass_code }}</td>
+                        <td>{{ pass.visitor_name }}</td>
+                        <td>{{ pass.purpose }}</td>
+                        <td>
+                            {% if pass.is_valid %}
+                                <span class="badge badge-valid">VALID</span>
+                            {% else %}
+                                <span class="badge badge-invalid">USED / EXPIRED</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #7f8c8d;">No passes generated yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <!-- JavaScript to handle the dynamic dropdown -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const purposeSelect = document.getElementById('purpose_select');
+            const otherGroup = document.getElementById('other_purpose_group');
+            const otherInput = document.getElementById('other_purpose_input');
+
+            purposeSelect.addEventListener('change', function() {
+                if (this.value === 'Other') {
+                    // Show the field and make it required
+                    otherGroup.style.display = 'block';
+                    otherInput.required = true;
+                } else {
+                    // Hide the field, remove required status, and clear any typed text
+                    otherGroup.style.display = 'none';
+                    otherInput.required = false;
+                    otherInput.value = ''; 
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+</body>
+</html>

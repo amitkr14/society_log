@@ -13,6 +13,63 @@ from rest_framework import viewsets
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from .permissions import IsAdminOrGuardCreateOnly
+from django.contrib import messages
+from django.contrib.auth.models import User
+from django.contrib.auth import login
+from .models import Resident
+from django.shortcuts import redirect
+
+def login_redirect(request):
+    """
+    This view acts as a traffic cop to send residents to the resident dashboard
+    and guards/admins to the guard dashboard.
+    """
+    if hasattr(request.user, 'resident'):
+        return redirect('resident_dashboard')
+    elif hasattr(request.user, 'guard') or request.user.is_staff or request.user.is_superuser:
+        return redirect('dashboard')
+    else:
+        # Fallback if someone has neither profile
+        return redirect('index')
+
+def index(request):
+    # If they are already logged in, don't show the landing page, send them to their dashboard!
+    if request.user.is_authenticated:
+        if hasattr(request.user, 'resident'):
+            return redirect('resident_dashboard')
+        elif hasattr(request.user, 'guard') or request.user.is_superuser:
+            return redirect('dashboard')
+            
+    return render(request, 'visitors/index.html')
+
+def resident_register(request):
+    # If they submit the registration form
+    if request.method == 'POST':
+        u_name = request.POST.get('username')
+        p_word = request.POST.get('password')
+        flat = request.POST.get('flat_number')
+        phone = request.POST.get('phone_number')
+
+        # 1. Safety Check: Does this username already exist?
+        if User.objects.filter(username=u_name).exists():
+            messages.error(request, "Error: That username is already taken.")
+            return redirect('resident_register')
+
+        # 2. Create the base Django User (create_user automatically encrypts the password!)
+        new_user = User.objects.create_user(username=u_name, password=p_word)
+        
+        # 3. Create the Society Resident profile and link it to the new user
+        Resident.objects.create(
+            user=new_user, 
+            flat_number=flat, 
+            phone_number=phone
+        )
+
+        messages.success(request, "Registration successful! You can now log in.")
+        return redirect('login')
+
+    # If it's a normal GET request, just show the empty form
+    return render(request, 'visitors/resident_register.html')
 
 
 
@@ -20,7 +77,7 @@ from .permissions import IsAdminOrGuardCreateOnly
 @login_required(login_url='/login/')
 def dashboard(request):
     # Get today's date so we only see today's traffic
-    today = timezone.now().date()
+    today = timezone.localdate()
     
     # Active visitors are those who checked in today, but check_out_time is still empty (null)
     active_visitors = Visitor.objects.filter(check_in_time__date=today, check_out_time__isnull=True)
@@ -33,6 +90,37 @@ def dashboard(request):
         'past_visitors': past_visitors,
     }
     return render(request, 'visitors/dashboard.html', context)
+
+@login_required
+def resident_dashboard(request):
+    # SECURITY: Ensure the logged-in user is actually a resident
+    if not hasattr(request.user, 'resident'):
+        messages.error(request, "Access Denied: Only residents can view this page.")
+        return redirect('login') 
+
+    if request.method == 'POST':
+        v_name = request.POST.get('visitor_name')
+        v_phone = request.POST.get('visitor_phone')
+        v_purpose = request.POST.get('purpose')
+        v_other = request.POST.get('other_purpose', '')
+
+        new_pass = GuestPass.objects.create(
+            resident=request.user.resident,
+            visitor_name=v_name,
+            visitor_phone=v_phone,
+            purpose=v_purpose,
+            other_purpose=v_other
+        )
+        
+        messages.success(request, f"Pass generated successfully! The OTP is: {new_pass.pass_code}")
+        return redirect('resident_dashboard')
+
+    my_passes = GuestPass.objects.filter(resident=request.user.resident).order_by('-created_at')
+
+    context = {
+        'passes': my_passes,
+    }
+    return render(request, 'visitors/resident_dashboard.html', context)
 
 @login_required(login_url='/login/')
 def check_in_visitor(request):
@@ -72,7 +160,7 @@ def check_out_visitor(request, visitor_id):
 # The @api_view decorator tells Django: "This is an API endpoint, expect to return JSON"
 @api_view(['GET'])
 def api_dashboard(request):
-    today = timezone.now().date()
+    today = timezone.localdate()
     
     # 1. Get the data from PostgreSQL (Exact same logic as your old view!)
     active_visitors = Visitor.objects.filter(check_in_time__date=today, check_out_time__isnull=True)
@@ -97,20 +185,29 @@ def api_check_in(request):
     pass_code = request.data.get('pass_code')
     
     if pass_code:
-        # 2. Look for a valid pass. If it doesn't exist, return a 404 error.
-        # We also make sure is_used=False so a code can't be used twice!
-        guest_pass = get_object_or_404(GuestPass, pass_code=pass_code, is_used=False)
+        # Find the pass (don't check is_used here, we'll use our robust property)
+        guest_pass = get_object_or_404(GuestPass, pass_code=pass_code)
         
-        # 3. Create the Visitor record automatically using the data from the pass!
+        # SECURITY FIX: Use the property we built to check BOTH is_used and expires_at
+        if not guest_pass.is_valid:
+            return Response(
+                {'error': 'This pass is either used or expired.'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # MODEL FIX: Properly traverse the Resident ForeignKey to get the info
+        resident_info = f"{guest_pass.resident.user.username} (Flat {guest_pass.resident.flat_number})"
+
+        # Create the Visitor record automatically using the data from the pass!
         visitor = Visitor.objects.create(
             name=guest_pass.visitor_name,
             phone_number=guest_pass.visitor_phone,
-            person_to_meet=guest_pass.resident_name,
+            person_to_meet=resident_info,
             purpose=guest_pass.purpose,
             checked_in_by=request.user.guard
         )
         
-        # 4. Burn the pass so it can't be used again
+        # Burn the pass so it can't be used again
         guest_pass.is_used = True
         guest_pass.save()
         
@@ -119,8 +216,7 @@ def api_check_in(request):
             'visitor_id': visitor.id
         }, status=status.HTTP_201_CREATED)
 
-
-    # 5. The fallback: If no pass_code was provided, just do a normal manual check-in
+    # The fallback: If no pass_code was provided, just do a normal manual check-in
     serializer = VisitorSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save(checked_in_by=request.user.guard)
@@ -129,25 +225,6 @@ def api_check_in(request):
             'data': serializer.data
         }, status=status.HTTP_201_CREATED)
     
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['POST'])
-def api_create_guest_pass(request):
-    # This represents the Resident creating a pass from their mobile app
-    serializer = GuestPassSerializer(data=request.data)
-    
-    if serializer.is_valid():
-        serializer.save()
-        
-        # Return a great UX response including the newly generated code
-        return Response({
-            'status': 'success',
-            'message': 'Guest pass generated!',
-            'pass_code': serializer.data['pass_code'],
-            'details': serializer.data
-        }, status=status.HTTP_201_CREATED)
-        
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
@@ -204,3 +281,60 @@ class VisitorViewSet(viewsets.ModelViewSet):
     ordering_fields = ['check_in_time']
     ordering = ['-check_in_time'] # The '-' means descending order (newest first)
 
+@api_view(['POST'])
+def api_create_guest_pass(request):
+    # This represents the Resident creating a pass from their mobile app
+    serializer = GuestPassSerializer(data=request.data)
+    
+    if serializer.is_valid():
+        serializer.save()
+        
+        # Return a great UX response including the newly generated code
+        return Response({
+            'status': 'success',
+            'message': 'Guest pass generated!',
+            'pass_code': serializer.data['pass_code'],
+            'details': serializer.data
+        }, status=status.HTTP_201_CREATED)
+        
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@login_required(login_url='/login/')
+def verify_otp_checkin(request):
+    if request.method == 'POST':
+        # Grab the OTP and force it to uppercase just in case the guard typed lowercase
+        entered_code = request.POST.get('pass_code', '').upper()
+
+        try:
+            # 1. Find the pass
+            guest_pass = GuestPass.objects.get(pass_code=entered_code)
+            
+            # 2. Check validity using our custom property (checks is_used and expires_at)
+            if not guest_pass.is_valid:
+                messages.error(request, f"Error: The OTP '{entered_code}' has expired or was already used.")
+            else:
+                # 3. Format the resident's info nicely for the guard
+                resident_info = f"{guest_pass.resident.user.username} (Flat {guest_pass.resident.flat_number})"
+                
+                # 4. Create the actual entry log automatically!
+                Visitor.objects.create(
+                    name=guest_pass.visitor_name,
+                    phone_number=guest_pass.visitor_phone,
+                    person_to_meet=resident_info,
+                    purpose=guest_pass.purpose,
+                    other_purpose=guest_pass.other_purpose,
+                    checked_in_by=request.user.guard
+                )
+                
+                # 5. Burn the OTP
+                guest_pass.is_used = True
+                guest_pass.save()
+                
+                messages.success(request, f"Success! {guest_pass.visitor_name} has been checked in using OTP.")
+
+        except GuestPass.DoesNotExist:
+            # 6. If the code literally doesn't exist in the database
+            messages.error(request, f"Error: '{entered_code}' is not a valid OTP.")
+
+    # Redirect right back to the dashboard whether it succeeded or failed
+    return redirect('dashboard')

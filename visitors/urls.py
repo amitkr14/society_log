@@ -12,11 +12,14 @@ router.register(r'search-visitors', views.VisitorViewSet, basename='search-visit
 
 urlpatterns = [
     # Built-in Django login/logout views
+    path('login-success/', views.login_redirect, name='login_redirect'),
     path('login/', auth_views.LoginView.as_view(template_name='visitors/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
     
     # Our custom views
-    path('', views.dashboard, name='dashboard'),
+    path('guard/dashboard/', views.dashboard, name='dashboard'),
+    path('', views.index, name='index'),
+    path('resident/register/', views.resident_register, name='resident_register'),
     path('check-in/', views.check_in_visitor, name='check_in'),
     path('check-out/<int:visitor_id>/', views.check_out_visitor, name='check_out'),
 
@@ -29,4 +32,6 @@ urlpatterns = [
     path('api/guest-pass/create/', views.api_create_guest_pass, name='api_create_guest_pass'),
     path('api/analytics/daily/', views.api_daily_analytics, name='api_daily_analytics'),
     path('api/', include(router.urls)),
+    path('resident/dashboard/', views.resident_dashboard, name='resident_dashboard'),
+    path('verify-otp/', views.verify_otp_checkin, name='verify_otp'),
 ]

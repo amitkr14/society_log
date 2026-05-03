@@ -5,4 +5,4 @@ djangorestframework_simplejwt==5.5.1
 psycopg2-binary==2.9.12
 PyJWT==2.12.1
 sqlparse==0.5.5
-django-filter
+django-filter>=23.1

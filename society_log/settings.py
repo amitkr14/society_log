@@ -155,3 +155,5 @@ REST_FRAMEWORK = {
         'rest_framework.filters.OrderingFilter',
     ],
 }
+# This tells Django: "After login, go to the 'login_redirect' URL we just made"
+LOGIN_REDIRECT_URL = 'login_redirect'

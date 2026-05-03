@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Society Log | Welcome</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f4f7f6; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .container { max-width: 800px; width: 100%; display: flex; gap: 30px; padding: 20px; }
+        .card { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); flex: 1; text-align: center; }
+        h2 { color: #2c3e50; margin-top: 0; }
+        p { color: #7f8c8d; margin-bottom: 30px; }
+        .btn { display: block; width: 100%; padding: 12px; margin-bottom: 15px; border-radius: 5px; text-decoration: none; font-weight: bold; box-sizing: border-box; }
+        .btn-primary { background-color: #2980b9; color: white; }
+        .btn-outline { background-color: transparent; border: 2px solid #2980b9; color: #2980b9; }
+        .btn-guard { background-color: #370661; color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Resident Selection -->
+        <div class="card">
+            <h2>🏡 Residents</h2>
+            <p>Generate guest passes and view your visitor history.</p>
+            <a href="{% url 'login' %}" class="btn btn-primary">Resident Login</a>
+            <a href="{% url 'resident_register' %}" class="btn btn-outline">Register New Flat</a>
+        </div>
+
+        <!-- Guard Selection -->
+        <div class="card">
+            <h2>🛡️ Security Guards</h2>
+            <p>Manage society check-ins, check-outs, and verify OTPs.</p>
+            <a href="{% url 'login' %}" class="btn btn-guard">Guard Portal Login</a>
+        </div>
+    </div>
+
+</body>
+</html>
