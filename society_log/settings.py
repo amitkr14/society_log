@@ -156,4 +156,4 @@ REST_FRAMEWORK = {
     ],
 }
 # This tells Django: "After login, go to the 'login_redirect' URL we just made"
-LOGIN_REDIRECT_URL = 'login_redirect'
+LOGIN_REDIRECT_URL = 'index'

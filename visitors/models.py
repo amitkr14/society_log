@@ -18,7 +18,7 @@ class Guard(models.Model):
     ]
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    phone_number = models.CharField(max_length=10)
+    phone_number = models.CharField(max_length=15)
     
     # ---> THIS IS THE MISSING PIECE <---
     shift = models.CharField(
@@ -40,7 +40,11 @@ class Visitor(models.Model):
     ]
 
     name = models.CharField(max_length=100)
-    phone_number = models.CharField(max_length=10)
+    phone_number = models.CharField(max_length=15)
+    country = models.CharField(max_length=50, default="India")
+    state = models.CharField(max_length=50, blank=True, null=True)
+    district = models.CharField(max_length=50, blank=True, null=True)
+    address_line = models.TextField(blank=True, null=True)
     person_to_meet = models.CharField(max_length=50, default='Amit')
     
     purpose = models.CharField(
@@ -73,8 +77,8 @@ class Resident(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     
     # Society-specific fields
-    flat_number = models.CharField(max_length=10, help_text="e.g., A-402, B-105")
-    phone_number = models.CharField(max_length=10)
+    flat_number = models.CharField(max_length=20, help_text="e.g., A-402, B-105")
+    phone_number = models.CharField(max_length=15)
     is_committee_member = models.BooleanField(default=False)
 
     def __str__(self):
@@ -93,7 +97,11 @@ class GuestPass(models.Model):
     resident = models.ForeignKey(Resident, on_delete=models.CASCADE, related_name='generated_passes',null=True, blank=True)
     
     visitor_name = models.CharField(max_length=100)
-    visitor_phone = models.CharField(max_length=10)
+    visitor_phone = models.CharField(max_length=15)
+    country = models.CharField(max_length=50, default="India")
+    state = models.CharField(max_length=50, blank=True, null=True)
+    district = models.CharField(max_length=50, blank=True, null=True)
+    address_line = models.TextField(blank=True, null=True)
     purpose = models.CharField(max_length=50, choices=PURPOSE_CHOICES, default='Delivery')
     other_purpose = models.CharField(max_length=100, blank=True, null=True, help_text="Please specify if purpose is 'Other'")
     

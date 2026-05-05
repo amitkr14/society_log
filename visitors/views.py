@@ -17,6 +17,7 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from django.contrib.auth import login
 from .models import Resident
+from datetime import datetime
 from django.shortcuts import redirect
 
 def login_redirect(request):
@@ -66,28 +67,42 @@ def resident_register(request):
         )
 
         messages.success(request, "Registration successful! You can now log in.")
-        return redirect('login')
+        return redirect('index')
 
     # If it's a normal GET request, just show the empty form
     return render(request, 'visitors/resident_register.html')
 
 
 
-# @login_required ensures nobody can see this page unless they are logged in
 @login_required(login_url='/login/')
 def dashboard(request):
-    # Get today's date so we only see today's traffic
-    today = timezone.localdate()
+    # 1. Look for a 'date' parameter in the URL (e.g., ?date=2026-05-04)
+    date_str = request.GET.get('date')
     
-    # Active visitors are those who checked in today, but check_out_time is still empty (null)
-    active_visitors = Visitor.objects.filter(check_in_time__date=today, check_out_time__isnull=True)
+    if date_str:
+        try:
+            # Convert the string from the HTML calendar into a Python Date object
+            selected_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            # Fallback just in case someone types a weird URL manually
+            selected_date = timezone.localdate() 
+    else:
+        # Default behavior: Just show today
+        selected_date = timezone.localdate()
     
-    # Past visitors are those who checked in today, and check_out_time is NOT empty
-    past_visitors = Visitor.objects.filter(check_in_time__date=today, check_out_time__isnull=False)
+    # 2. Filter the database using the newly determined selected_date
+    active_visitors = Visitor.objects.filter(check_in_time__date=selected_date, check_out_time__isnull=True)
+    past_visitors = Visitor.objects.filter(check_in_time__date=selected_date, check_out_time__isnull=False)
+
+    # 3. Helper variable for the HTML template to know if we are looking at the past
+    is_today = (selected_date == timezone.localdate())
 
     context = {
         'active_visitors': active_visitors,
         'past_visitors': past_visitors,
+        # Format the date back to a string so the HTML calendar can display it
+        'selected_date': selected_date.strftime('%Y-%m-%d'), 
+        'is_today': is_today,
     }
     return render(request, 'visitors/dashboard.html', context)
 
@@ -101,6 +116,10 @@ def resident_dashboard(request):
     if request.method == 'POST':
         v_name = request.POST.get('visitor_name')
         v_phone = request.POST.get('visitor_phone')
+        country = request.POST.get('country', 'India')
+        state = request.POST.get('state', '')
+        district = request.POST.get('district', '')
+        address_line = request.POST.get('address_line', '')
         v_purpose = request.POST.get('purpose')
         v_other = request.POST.get('other_purpose', '')
 
@@ -108,6 +127,10 @@ def resident_dashboard(request):
             resident=request.user.resident,
             visitor_name=v_name,
             visitor_phone=v_phone,
+            country=country,
+            state=state,
+            district=district,
+            address_line=address_line,
             purpose=v_purpose,
             other_purpose=v_other
         )
@@ -128,6 +151,10 @@ def check_in_visitor(request):
         # Grab the data from the HTML form (we will build this in Step 4)
         name = request.POST.get('name')
         phone = request.POST.get('phone_number')
+        country = request.POST.get('country', 'India')
+        state = request.POST.get('state', '')
+        district = request.POST.get('district', '')
+        address_line = request.POST.get('address_line', '')
         person_to_meet = request.POST.get('person_to_meet')
         purpose = request.POST.get('purpose')
         other_purpose = request.POST.get('other_purpose')
@@ -136,6 +163,10 @@ def check_in_visitor(request):
         Visitor.objects.create(
             name=name,
             phone_number=phone,
+            country=country,
+            state=state,
+            district=district,
+            address_line=address_line,
             person_to_meet=person_to_meet,
             purpose=purpose,
             other_purpose=other_purpose,
@@ -201,7 +232,10 @@ def api_check_in(request):
         # Create the Visitor record automatically using the data from the pass!
         visitor = Visitor.objects.create(
             name=guest_pass.visitor_name,
-            phone_number=guest_pass.visitor_phone,
+            phone_number=guest_pass.visitor_phone,country=guest_pass.country,
+            state=guest_pass.state,
+            district=guest_pass.district,
+            address_line=guest_pass.address_line,
             person_to_meet=resident_info,
             purpose=guest_pass.purpose,
             checked_in_by=request.user.guard
@@ -320,6 +354,10 @@ def verify_otp_checkin(request):
                 Visitor.objects.create(
                     name=guest_pass.visitor_name,
                     phone_number=guest_pass.visitor_phone,
+                    country=guest_pass.country,
+                    state=guest_pass.state,
+                    district=guest_pass.district,
+                    address_line=guest_pass.address_line,
                     person_to_meet=resident_info,
                     purpose=guest_pass.purpose,
                     other_purpose=guest_pass.other_purpose,

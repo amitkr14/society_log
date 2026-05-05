@@ -14,7 +14,7 @@ urlpatterns = [
     # Built-in Django login/logout views
     path('login-success/', views.login_redirect, name='login_redirect'),
     path('login/', auth_views.LoginView.as_view(template_name='visitors/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(next_page='login'), name='logout'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='index'), name='logout'),
     
     # Our custom views
     path('guard/dashboard/', views.dashboard, name='dashboard'),

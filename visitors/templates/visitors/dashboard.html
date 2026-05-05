@@ -57,7 +57,7 @@
 
     <!-- NEW: Fast-Track OTP Form -->
     <div style="background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px; display: flex; align-items: center; gap: 15px;">
-        <h3 style="margin: 0; color: #2c3e50; white-space: nowrap;">⚡ Fast-Track OTP Check-In:</h3>
+        <h3 style="margin: 0; color: #b10606; white-space: nowrap;">⚡ Fast-Track OTP Check-In:</h3>
         
         <form action="{% url 'verify_otp' %}" method="POST" style="display: flex; gap: 10px; margin: 0; width: 100%;">
             {% csrf_token %}
@@ -65,14 +65,32 @@
             <button type="submit" class="btn btn-primary" style="background-color: #27ae60; border: none; padding: 10px 25px;">Verify & Allow Entry</button>
         </form>
     </div>
-
-    <!-- Active Visitors Section -->
-    <h2>Currently Inside Society</h2>
+    <!-- NEW: Date Filter Calendar -->
+    <div style="background-color: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; color: #333; font-size: 1.2em;">📅 Filter Past Logs</h3>
+        
+        <form method="GET" action="{% url 'dashboard' %}" style="display: flex; gap: 10px; margin: 0; align-items: center;">
+            <label for="log_date" style="font-weight: bold; margin: 0;">Select Date:</label>
+            <!-- The value attribute keeps the selected date visible after reloading -->
+            <input type="date" id="log_date" name="date" value="{{ selected_date }}" style="padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-size: 16px;">
+            
+            <button type="submit" class="btn btn-primary" style="padding: 8px 15px;">Search Logs</button>
+            
+            <!-- Show a "Back to Today" button if they are looking at an older date -->
+            {% if not is_today %}
+                <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="padding: 8px 15px; font-weight: normal;">Return to Today</a>
+            {% endif %}
+        </form>
+    </div>
+    <!-- Change the Past Visitors Header -->
+    <h2>Checked Out {% if is_today %}Today{% else %}on {{ selected_date }}{% endif %}</h2>
     <table>
         <thead>
             <tr>
                 <th>Visitor Name</th>
                 <th>Phone</th>
+                <th>Location (State/Dist)</th> <!-- NEW -->
+                <th>Specific Address</th>     <!-- NEW -->
                 <th>To meet</th>
                 <th>Purpose</th>
                 <th>Check-in Time</th>
@@ -85,6 +103,19 @@
             <tr>
                 <td>{{ visitor.name }}</td>
                 <td>{{ visitor.phone_number }}</td>
+                
+                <!-- NEW: Display State and District -->
+                <td>
+                    {% if visitor.state %}
+                        {{ visitor.state }}{% if visitor.district %}, {{ visitor.district }}{% endif %}
+                    {% else %}
+                        <span style="color: gray;">N/A</span>
+                    {% endif %}
+                </td>
+
+                <!-- NEW: Display the specific address line -->
+                <td>{{ visitor.address_line|default:"---" }}</td>
+
                 <td>{{ visitor.person_to_meet }}</td>
                 <td>
                     {% if visitor.purpose == 'Other' %}
@@ -102,18 +133,20 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="6" style="text-align: center; color: rgb(94, 47, 138);">No visitors currently inside.</td>
+                <td colspan="9" style="text-align: center; color: rgb(94, 47, 138);">No visitors currently inside.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 
-    <!-- Past Visitors Section -->
-    <h2>Checked Out Today</h2>
+    <!-- Change the Past Visitors Header -->
+    <h2>Checked Out {% if is_today %}Today{% else %}on {{ selected_date }}{% endif %}</h2>
     <table>
         <thead>
             <tr>
                 <th>Visitor Name</th>
+                <th>Location (State/Dist)</th> 
+                <th>Specific Address</th>     
                 <th>To meet</th>
                 <th>Purpose</th>
                 <th>Check-in Time</th>
@@ -125,6 +158,19 @@
             {% for visitor in past_visitors %}
             <tr>
                 <td>{{ visitor.name }}</td>
+                
+                <!-- NEW: Display State and District -->
+                <td>
+                    {% if visitor.state %}
+                        {{ visitor.state }}{% if visitor.district %}, {{ visitor.district }}{% endif %}
+                    {% else %}
+                        <span style="color: gray;">N/A</span>
+                    {% endif %}
+                </td>
+
+                <!-- NEW: Display the specific address line -->
+                <td>{{ visitor.address_line|default:"---" }}</td>
+
                 <td>{{visitor.person_to_meet}}</td>
                 <td>
                     {% if visitor.purpose == 'Other' %}
@@ -139,11 +185,10 @@
             </tr>
             {% empty %}
             <tr>
-                <td colspan="5" style="text-align: center; color: gray;">No one has checked out yet today.</td>
+                <td colspan="8" style="text-align: center; color: gray;">No one has checked out yet today.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-
 </body>
 </html>
